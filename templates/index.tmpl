@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        .number-display {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="chart-container">
+            <canvas id="timeSeriesChart" width="400" height="300"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="barChart" width="400" height="300"></canvas>
+        </div>
+        <div class="number-display">
+            <p>Number: <span id="numberDisplay">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Time Series Chart
+            var timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+            var timeSeriesChart = new Chart(timeSeriesCtx, {
+                type: 'line',
+                data: {
+                    labels: {{.Labels}},
+                    datasets: [{
+                        label: 'Time Series Data',
+                        data: {{.Data}},
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 2,
+                        fill: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+
+            // Bar Chart
+            var barChartCtx = document.getElementById('barChart').getContext('2d');
+            var barChart = new Chart(barChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ["Label1", "Label2", "Label3"],
+                    datasets: [{
+                        label: 'Bar Chart Data',
+                        data: [5, 15, 10],
+                        backgroundColor: 'rgb(255, 99, 132)',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: [{
+                            stacked: true
+                        }],
+                        y: [{
+                            stacked: true
+                        }]
+                    }
+                }
+            });
+
+            // Number Display
+            var numberDisplay = document.getElementById('numberDisplay');
+            numberDisplay.innerText = 42; // Replace with your actual number data
+        });
+    </script>
+</body>
+</html>
