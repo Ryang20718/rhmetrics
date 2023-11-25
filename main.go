@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
-
 	"rh_metrics/m/src/rhwrapper"
+	"strings"
 )
 
 func main() {
@@ -30,13 +32,25 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Please Enter Your MFA: ")
+
 	mfa, _ := reader.ReadString('\n')
+	mfa = strings.TrimSuffix(mfa, "\n")
 
 	rhClient := rhwrapper.Hood{}
 
 	username := os.Getenv("ROBINHOOD_USERNAME")
 	password := os.Getenv("ROBINHOOD_PASSWORD")
-	rhClient.Auth(username, password, mfa)
-	fmt.Println(rhClient)
+
+	cli, err := rhClient.Auth(username, password, mfa)
+	if err != nil {
+		return
+	}
+	rhClient.Cli = cli
+
+	ctx := context.Background()
+	err = rhClient.ProcessRealizedEarnings(ctx)
+	if err != nil {
+		return
+	}
 
 }
