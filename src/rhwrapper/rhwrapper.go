@@ -6,6 +6,10 @@ import (
 	"container/list"
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/go-gota/gota/dataframe"
+	"github.com/go-gota/gota/series"
 
 	robinhood "github.com/Ryang20718/robinhood-client/client"
 	models "github.com/Ryang20718/robinhood-client/models"
@@ -94,11 +98,75 @@ func (h *Hood) FetchStockSplits(ctx context.Context, ticker string) error {
 	return nil
 }
 
-func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
+/*
+type OptionTransaction struct {
+	Ticker          string
+	TransactionType string
+	Qty             float64
+	StrikePrice     float64
+	UnitCost        float64
+	CreatedAt       string
+	ExpirationDate  string
+	Status          string // Assigned or Expired or Open
+	Tag             string
+}
+
+type Transaction struct {
+	Ticker          string
+	TransactionType string // Buy. Sell
+	Qty             float64
+	UnitCost        float64
+	CreatedAt       string
+	Tag             string
+}
+*/
+
+/*
+convert transaction to dataframe
+*/
+func (h *Hood) ConvertTransactionDF(ctx context.Context) error {
 	stockOrderMap, err := h.FetchRegularTrades(ctx)
 	if err != nil {
 		return err
 	}
+
+	tickers := series.String([]string{})
+	transactionType := series.String([]string{})
+	qty := series.float64([]float64{})
+	unitCost := series.Float([]float64{})
+	createdAt := series.Time([]time.Time{})
+	tag := series.String([]string{})
+
+	// Populate series with data from struct array
+	for _, stockOrders := range stockOrderMap {
+		for order := stockOrders.Front(); order != nil; order = order.Next() {
+
+			tickers.Append(order.Ticker)
+			transactionType.Append(order.TransactionType)
+			qty.Append(order.Qty)
+			unitCost.Append(order.UnitCost)
+			createdAt.Append(order.CreatedAt)
+			tag.Append(order.Tag)
+		}
+	}
+	df := dataframe.New(
+		tickers,
+		transactionType,
+		qty,
+		unitCost,
+		createdAt,
+		tag,
+	)
+}
+
+// /*
+// convert transaction to dataframe
+// */
+// func (h *Hood) ConvertOptionTransactionDF(ctx context.Context) error {
+
+// }
+
+func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 
 	// optionOrderMap, err := h.FetchOptionTrades(ctx)
 	// if err != nil {
