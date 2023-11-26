@@ -8,11 +8,11 @@ import (
 	"fmt"
 	robinhood "github.com/Ryang20718/robinhood-client/client"
 	models "github.com/Ryang20718/robinhood-client/models"
+	"github.com/go-gota/gota/dataframe"
+	"github.com/go-gota/gota/series"
+	"os"
 	"sort"
 	"strings"
-	// "github.com/go-gota/gota/dataframe"
-	// "github.com/go-gota/gota/series"
-	"os"
 )
 
 type HoodAPI interface {
@@ -214,7 +214,42 @@ type Transaction struct {
 // 	return &df, nil
 // }
 
-func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
+/*
+convert profit to dataframe
+*/
+func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
+	// Create series for each field
+	years := series.New([]string{}, series.String, "Year")
+	dates := series.New([]string{}, series.String, "Date")
+	amounts := series.New([]float64{}, series.Float, "Amount")
+	lcaps := series.New([]bool{}, series.Bool, "Lcap")
+	tickers := series.New([]string{}, series.String, "Ticker")
+	tags := series.New([]string{}, series.String, "Tag")
+
+	// Populate series with data from Profit struct array
+	for _, profit := range profitList {
+		years.Append(strings.Split(profit.Date, "-")[0])
+		dates.Append(profit.Date)
+		amounts.Append(profit.Amount)
+		lcaps.Append(profit.Lcap)
+		tickers.Append(profit.Ticker)
+		tags.Append(profit.Tag)
+	}
+
+	// Create DataFrame
+	df := dataframe.New(
+		years,
+		dates,
+		amounts,
+		lcaps,
+		tickers,
+		tags,
+	)
+
+	return &df
+}
+
+func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
 	// stockMap, err := h.FetchRegularTrades(ctx)
 	// if err != nil {
 	// 	return err
@@ -257,16 +292,14 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 	dataFile, err := os.Open("stock.map")
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	dataDecoder := gob.NewDecoder(dataFile)
 	err = dataDecoder.Decode(&stockMap)
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil, err
 	}
 	dataFile.Close()
 
@@ -274,16 +307,14 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 	dataFile, err = os.Open("option.map")
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	dataDecoder = gob.NewDecoder(dataFile)
 	err = dataDecoder.Decode(&optionMap)
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil, err
 	}
 	dataFile.Close()
 
@@ -385,7 +416,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 			} else if option.Status == "Expired" {
 				if option.TransactionType == "STO" || option.TransactionType == "STC" {
 					profit := Profit{
-						Date:   option.CreatedAt,
+						Date:   strings.Split(option.CreatedAt, "T")[0],
 						Amount: option.Qty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
 						Ticker: option.Ticker,
@@ -394,7 +425,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 					profitList = append(profitList, profit)
 				} else {
 					profit := Profit{
-						Date:   option.CreatedAt,
+						Date:   strings.Split(option.CreatedAt, "T")[0],
 						Amount: -option.Qty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
 						Ticker: option.Ticker,
@@ -415,7 +446,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 				for qty != 0.0 {
 					if len(profitsMap[stock.Ticker]) == 0 {
 						profit := Profit{
-							Date:   stock.CreatedAt,
+							Date:   strings.Split(stock.CreatedAt, " ")[0],
 							Amount: stock.UnitCost * stock.Qty,
 							Lcap:   false,
 							Ticker: stock.Ticker,
@@ -451,7 +482,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 				}
 				if lcapGain > 0.0 {
 					profit := Profit{
-						Date:   stock.CreatedAt,
+						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: lcapGain,
 						Lcap:   true,
 						Ticker: stock.Ticker,
@@ -461,7 +492,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 				}
 				if scapGain > 0.0 {
 					profit := Profit{
-						Date:   stock.CreatedAt,
+						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: scapGain,
 						Lcap:   false,
 						Ticker: stock.Ticker,
@@ -477,26 +508,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 			}
 		}
 	}
-	fmt.Println(len(profitList))
 
-	// f, err := os.Create("/Users/ryang/Documents/rh_metrics/stock.csv")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// stockDf.WriteCSV(f)
-
-	// f, err = os.Create("/Users/ryang/Documents/rh_metrics/options.csv")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// optionDf.WriteCSV(f)
-	// fmt.Println(optionDf)
-	// optionOrderMap, err := h.FetchOptionTrades(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-
-	return nil
+	profitListDf := h.ConvertProfitDf(profitList)
+	return profitListDf, nil
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	// "fmt"
+	"fmt"
 	// "bufio"
 	// "os"
 	// "strings"
@@ -48,9 +48,10 @@ func main() {
 	// rhClient.Cli = cli
 
 	ctx := context.Background()
-	err := rhClient.ProcessRealizedEarnings(ctx)
+	profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 	if err != nil {
 		return
 	}
+	fmt.Println(profitDf)
 
 }
