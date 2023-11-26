@@ -1,7 +1,7 @@
 package rhwrapper
 
 import (
-	"fmt"
+	"time"
 )
 
 type HistoricalData struct {
