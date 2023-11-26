@@ -340,29 +340,6 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) error {
 	profitList := []Profit{}
 	profitsMap := make(map[string][]*models.Transaction) // keep track of buy/sell
 
-	/*
-	   type OptionTransaction struct {
-	   	Ticker          string
-	   	TransactionType string
-	   	Qty             float64
-	   	StrikePrice     float64
-	   	UnitCost        float64
-	   	CreatedAt       string
-	   	ExpirationDate  string
-	   	Status          string // Assigned or Expired or Open
-	   	Tag             string
-	   }
-
-	   type Transaction struct {
-	   	Ticker          string
-	   	TransactionType string // Buy. Sell
-	   	Qty             float64
-	   	UnitCost        float64
-	   	CreatedAt       string
-	   	Tag             string
-	   }
-	*/
-
 	for {
 		if stockIdx >= stockLen && optionIdx >= optionLen {
 			break
