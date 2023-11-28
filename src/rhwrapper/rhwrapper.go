@@ -250,6 +250,7 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 }
 
 func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
+	kkkk := 0.0
 	if len("GG") == 10 {
 		stockMap, err := h.FetchRegularTrades(ctx)
 		if err != nil {
@@ -440,9 +441,6 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 
 		} else {
 			stock := stockList[stockIdx]
-			if stock.Ticker == "" {
-				fmt.Println(stock)
-			}
 			stockIdx += 1
 			if stock.TransactionType == "sell" {
 				qty := stock.Qty
@@ -450,7 +448,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				lcapGain := 0.0
 				scapGain := 0.0
 				for qty != 0.0 {
-					if len(profitsMap[stock.Ticker]) == 0 {
+					if len(profitsMap[stock.Ticker]) <= 0 {
 						profit := Profit{
 							Date:   strings.Split(stock.CreatedAt, " ")[0],
 							Amount: stock.UnitCost * stock.Qty,
@@ -472,21 +470,29 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 							profitsMap[stock.Ticker][i].Qty -= qty
 							qty = 0
 							break
-						}
-						qty -= profitsMap[stock.Ticker][i].Qty
-						indexToPop = i
-						gain := boughtStock.Qty * (stock.UnitCost - boughtStock.UnitCost)
-						if OneYearApart(boughtStock.CreatedAt, stock.CreatedAt) {
-							lcapGain += gain
 						} else {
-							scapGain += gain
+							qty -= boughtStock.Qty
+							indexToPop = i
+							gain := boughtStock.Qty * (stock.UnitCost - boughtStock.UnitCost)
+							if OneYearApart(boughtStock.CreatedAt, stock.CreatedAt) {
+								lcapGain += gain
+							} else {
+								scapGain += gain
+							}
+						}
+						if qty == 0 {
+							break
 						}
 					}
+				}
+				if strings.Contains(stock.CreatedAt, "2019"){
+					kkkk += (lcapGain + scapGain)
+					fmt.Println("KOK", kkkk)
 				}
 				if indexToPop != -1 {
 					profitsMap[stock.Ticker] = profitsMap[stock.Ticker][indexToPop+1:]
 				}
-				if lcapGain > 0.0 {
+				if lcapGain != 0.0 {
 					profit := Profit{
 						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: lcapGain,
@@ -496,7 +502,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 					}
 					profitList = append(profitList, profit)
 				}
-				if scapGain > 0.0 {
+				if scapGain != 0.0 {
 					profit := Profit{
 						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: scapGain,
@@ -514,7 +520,6 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			}
 		}
 	}
-
 	profitListDf := h.ConvertProfitDf(profitList)
 	return profitListDf, nil
 }
