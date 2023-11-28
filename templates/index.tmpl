@@ -32,6 +32,12 @@
         <div class="chart-container">
             <canvas id="barChart" width="400" height="300"></canvas>
         </div>
+        <div class="chart-container">
+            <canvas id="YearEarningsByTag" width="400" height="300"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="EarningsByTicker" width="400" height="300"></canvas>
+        </div>
         <div class="number-display">
             <p>Number: <span id="numberDisplay">0</span></p>
         </div>
@@ -44,10 +50,10 @@
             var timeSeriesChart = new Chart(timeSeriesCtx, {
                 type: 'line',
                 data: {
-                    labels: {{.Labels}},
+                    labels: {{.LabelsTimeSeries}},
                     datasets: [{
-                        label: 'Time Series Data',
-                        data: {{.Data}},
+                        label: 'Realized Earnings By Year',
+                        data: {{.DataTimeSeries}},
                         borderColor: 'rgb(75, 192, 192)',
                         borderWidth: 2,
                         fill: false,
@@ -66,7 +72,7 @@
                 data: {
                     labels: ["Label1", "Label2", "Label3"],
                     datasets: [{
-                        label: 'Bar Chart Data',
+                        label: 'Earnings By Tag',
                         data: [5, 15, 10],
                         backgroundColor: 'rgb(255, 99, 132)',
                         borderWidth: 2,
@@ -85,6 +91,96 @@
                     }
                 }
             });
+
+            var years = {{.LabelsYearsTag}}
+            var tags = {{.LabelsTags}}
+            var amounts = {{.DataAmount}}
+
+            // Group data by Tag
+            var groupedData = {};
+            for (var i = 0; i < years.length; i++) {
+                var year = years[i];
+                var tag = tags[i];
+                var amount = amounts[i];
+
+                if (!groupedData[tag]) {
+                    groupedData[tag] = { label: tag, data: Array(years.length).fill(0) };
+                }
+
+                groupedData[tag].data[years.indexOf(year)] += amount;
+            }
+
+            // Create datasets dynamically
+            var datasets = Object.values(groupedData).map(item => ({
+                label: item.label,
+                data: item.data,
+                backgroundColor: getRandomColor(),
+                borderWidth: 1,
+                stack: 'Stack 1' // You can adjust the stack name as needed
+            }));
+
+            // Chart configuration
+            var barChartCtx = document.getElementById('YearEarningsByTag').getContext('2d');
+            var barChart = new Chart(barChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from(new Set(years)).map(String), // Unique years
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: [{
+                            stacked: true
+                        }],
+                        y: [{
+                            stacked: true
+                        }]
+                    }
+                }
+            });
+
+
+            var earningsLabelsByTicker = {{.DataLabelsByTicker}};
+            var earningValsByTicker = {{.DataValByTicker}};
+
+            // Create pie chart with dynamically generated colors
+            var pieChartCtx = document.getElementById('EarningsByTicker').getContext('2d');
+            var pieChart = new Chart(pieChartCtx, {
+                type: 'pie',
+                data: {
+                    labels: earningsLabelsByTicker,
+                    datasets: [{
+                        data: earningValsByTicker,
+                        backgroundColor: generateRandomColors(earningValsByTicker.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            function generateRandomColors(count) {
+                var colors = [];
+                for (var i = 0; i < count; i++) {
+                    colors.push(getRandomColor());
+                }
+                return colors;
+            }
+
+
+            // Function to generate random color
+            function getRandomColor() {
+                var letters = '0123456789ABCDEF';
+                var color = '#';
+                for (var i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
 
             // Number Display
             var numberDisplay = document.getElementById('numberDisplay');

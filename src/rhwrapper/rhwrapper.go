@@ -250,43 +250,46 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 }
 
 func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
-	// stockMap, err := h.FetchRegularTrades(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	if len("GG") == 10 {
+		stockMap, err := h.FetchRegularTrades(ctx)
+		if err != nil {
+			panic("GG")
+		}
 
-	// optionMap, err := h.FetchOptionTrades(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+		optionMap, err := h.FetchOptionTrades(ctx)
+		if err != nil {
+			panic("GG")
+		}
 
-	// encodeFile, err := os.Create("/Users/ryang/Documents/rh_metrics/stock.map")
-	// if err != nil {
-	// 	panic(err)
-	// }
+		encodeFile, err := os.Create("/Users/ryang/Documents/rh_metrics/stock.map")
+		if err != nil {
+			panic(err)
+		}
 
-	// // Since this is a binary format large parts of it will be unreadable
-	// encoder := gob.NewEncoder(encodeFile)
+		// Since this is a binary format large parts of it will be unreadable
+		encoder := gob.NewEncoder(encodeFile)
 
-	// // Write to the file
-	// if err := encoder.Encode(stockMap); err != nil {
-	// 	panic(err)
-	// }
-	// encodeFile.Close()
+		// Write to the file
+		if err := encoder.Encode(stockMap); err != nil {
+			panic(err)
+		}
+		encodeFile.Close()
 
-	// encodeFile, err = os.Create("/Users/ryang/Documents/rh_metrics/option.map")
-	// if err != nil {
-	// 	panic(err)
-	// }
+		encodeFile, err = os.Create("/Users/ryang/Documents/rh_metrics/option.map")
+		if err != nil {
+			panic(err)
+		}
 
-	// // Since this is a binary format large parts of it will be unreadable
-	// encoder = gob.NewEncoder(encodeFile)
+		// Since this is a binary format large parts of it will be unreadable
+		encoder = gob.NewEncoder(encodeFile)
 
-	// // Write to the file
-	// if err := encoder.Encode(optionMap); err != nil {
-	// 	panic(err)
-	// }
-	// encodeFile.Close()
+		// Write to the file
+		if err := encoder.Encode(optionMap); err != nil {
+			panic(err)
+		}
+		encodeFile.Close()
+		panic("GG")
+	}
 
 	var stockMap map[string][]models.Transaction
 	dataFile, err := os.Open("stock.map")
@@ -437,6 +440,9 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 
 		} else {
 			stock := stockList[stockIdx]
+			if stock.Ticker == "" {
+				fmt.Println(stock)
+			}
 			stockIdx += 1
 			if stock.TransactionType == "sell" {
 				qty := stock.Qty
@@ -456,7 +462,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 						break
 					}
 					for i, boughtStock := range profitsMap[stock.Ticker] {
-						if stock.Qty > qty {
+						if profitsMap[stock.Ticker][i].Qty > qty {
 							gain := qty * (stock.UnitCost - boughtStock.UnitCost)
 							if OneYearApart(boughtStock.CreatedAt, stock.CreatedAt) {
 								lcapGain += gain

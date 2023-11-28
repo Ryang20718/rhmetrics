@@ -6,6 +6,8 @@ github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tS
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Ryang20718/robinhood-client v0.0.0-20231125174554-011536d46438 h1:a9g2U+9ZHpyAXFAe/yeiofMl6Y4iiHtlbNXQ3+cdxHE=
 github.com/Ryang20718/robinhood-client v0.0.0-20231125174554-011536d46438/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20231127075747-94f436b3094d h1:ZPB2A3WV0QDNYtcUnNnVonCL14HNz2atq/hO5LtJyeM=
+github.com/Ryang20718/robinhood-client v0.0.0-20231127075747-94f436b3094d/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
