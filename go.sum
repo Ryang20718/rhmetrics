@@ -8,6 +8,14 @@ github.com/Ryang20718/robinhood-client v0.0.0-20231125174554-011536d46438 h1:a9g
 github.com/Ryang20718/robinhood-client v0.0.0-20231125174554-011536d46438/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
 github.com/Ryang20718/robinhood-client v0.0.0-20231127075747-94f436b3094d h1:ZPB2A3WV0QDNYtcUnNnVonCL14HNz2atq/hO5LtJyeM=
 github.com/Ryang20718/robinhood-client v0.0.0-20231127075747-94f436b3094d/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20231209033119-eadce8ae54c0 h1:Ys+PEMDf3hiZ/dkW9tjzkmUH9FgpjwN9LWNA2fI5cps=
+github.com/Ryang20718/robinhood-client v0.0.0-20231209033119-eadce8ae54c0/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20231217054052-e9200c65f35c h1:QeDxGqjONDOO0PjzInAehNOyQHd6fE+6FPFEXaqJXkY=
+github.com/Ryang20718/robinhood-client v0.0.0-20231217054052-e9200c65f35c/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20231227060729-4853d335d49a h1:C0hpyoh9NR8yX3ggPschp3NjEuJuc35EsjFrpstxPp4=
+github.com/Ryang20718/robinhood-client v0.0.0-20231227060729-4853d335d49a/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10 h1:c6N6XyQ/MqZjWtdeCJMlqgQ7WMaT0Xd2idPs3iq+7Us=
+github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=

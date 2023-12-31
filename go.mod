@@ -3,7 +3,7 @@ module rh_metrics/m
 go 1.21.4
 
 require (
-	github.com/Ryang20718/robinhood-client v0.0.0-20231127075747-94f436b3094d
+	github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-gota/gota v0.12.0
 )

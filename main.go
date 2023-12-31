@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	// "bufio"
-	// "os"
-	// "strings"
+	"bufio"
+	"os"
+	"strings"
 	"github.com/gin-gonic/gin"
 	"net/http"
 
@@ -15,23 +15,21 @@ import (
 )
 
 func main() {
-
-	// reader := bufio.NewReader(os.Stdin)
-	// fmt.Print("Please Enter Your MFA: ")
-
-	// mfa, _ := reader.ReadString('\n')
-	// mfa = strings.TrimSuffix(mfa, "\n")
-
 	rhClient := rhwrapper.Hood{}
+	if len("GG") == 10 {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Please Enter Your MFA: ")
+		mfa, _ := reader.ReadString('\n')
+		mfa = strings.TrimSuffix(mfa, "\n")
+		username := os.Getenv("ROBINHOOD_USERNAME")
+		password := os.Getenv("ROBINHOOD_PASSWORD")
+		cli, err := rhClient.Auth(username, password, mfa)
+		if err != nil {
+			return
+		}
+		rhClient.Cli = cli
+	}
 
-	// username := os.Getenv("ROBINHOOD_USERNAME")
-	// password := os.Getenv("ROBINHOOD_PASSWORD")
-
-	// cli, err := rhClient.Auth(username, password, mfa)
-	// if err != nil {
-	// 	return
-	// }
-	// rhClient.Cli = cli
 
 	ctx := context.Background()
 	profitDf, err := rhClient.ProcessRealizedEarnings(ctx)

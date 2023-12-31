@@ -250,7 +250,6 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 }
 
 func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
-	kkkk := 0.0
 	if len("GG") == 10 {
 		stockMap, err := h.FetchRegularTrades(ctx)
 		if err != nil {
@@ -289,7 +288,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			panic(err)
 		}
 		encodeFile.Close()
-		panic("GG")
+		// panic("GG")
 	}
 
 	var stockMap map[string][]models.Transaction
@@ -342,51 +341,25 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 		return optionList[i].CreatedAt < optionList[j].CreatedAt
 	})
 
-	// content, _ := os.ReadFile("/Users/ryang/Documents/rh_metrics/stock.csv")
-	// ioContent := strings.NewReader(string(content))
-
-	// stockDf := dataframe.ReadCSV(
-	// 	ioContent,
-	// 	dataframe.WithDelimiter(','),
-	// 	dataframe.HasHeader(true),
-	// )
-
-	// content, _ = os.ReadFile("/Users/ryang/Documents/rh_metrics/options.csv")
-	// ioContent = strings.NewReader(string(content))
-
-	// optionDf := dataframe.ReadCSV(
-	// 	ioContent,
-	// 	dataframe.WithDelimiter(','),
-	// 	dataframe.HasHeader(true),
-	// )
-
-	// stockDf = stockDf.Arrange(
-	// 	dataframe.Sort("createdAt"),
-	// )
-
-	// optionDf = optionDf.Arrange(
-	// 	dataframe.Sort("createdAt"),
-	// )
-
 	stockLen := len(stockList)
 	optionLen := len(optionList)
 
 	stockIdx, optionIdx := 0, 0
 	profitList := []Profit{}
 	profitsMap := make(map[string][]*models.Transaction) // keep track of buy/sell
-
 	for {
+		// interweave stocks & options to ensure FIFO
 		if stockIdx >= stockLen && optionIdx >= optionLen {
 			break
 		}
 
-		ticker := ""
 		calcOption := false
 		if stockIdx >= stockLen {
 			calcOption = true
 		} else if optionIdx >= optionLen {
 			calcOption = false
 		} else {
+			// option date is before stock
 			if strings.Split(optionList[optionIdx].CreatedAt, "T")[0] < strings.Split(stockList[stockIdx].CreatedAt, " ")[0] {
 				calcOption = true
 			} else {
@@ -408,15 +381,15 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				stock := models.Transaction{
 					Ticker:          option.Ticker,
 					TransactionType: "buy",
-					Qty:             100.00,
-					UnitCost:        option.UnitCost + premium,
+					Qty:             100.00 * option.Qty,
+					UnitCost:        option.StrikePrice + premium,
 					CreatedAt:       option.ExpirationDate,
 					Tag:             option.TransactionType + " assigned",
 				}
 				if profitsMap[option.Ticker] == nil {
 					profitsMap[option.Ticker] = []*models.Transaction{}
 				}
-				profitsMap[option.Ticker] = append(profitsMap[ticker], &stock)
+				profitsMap[option.Ticker] = append(profitsMap[option.Ticker], &stock)
 			} else if option.Status == "Expired" {
 				if option.TransactionType == "STO" || option.TransactionType == "STC" {
 					profit := Profit{
@@ -484,10 +457,6 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 							break
 						}
 					}
-				}
-				if strings.Contains(stock.CreatedAt, "2019"){
-					kkkk += (lcapGain + scapGain)
-					fmt.Println("KOK", kkkk)
 				}
 				if indexToPop != -1 {
 					profitsMap[stock.Ticker] = profitsMap[stock.Ticker][indexToPop+1:]
