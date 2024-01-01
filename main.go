@@ -72,7 +72,9 @@ func main() {
 	earningsByTickerLabels := earningsDfByTicker.Col("Ticker").Records()
 
 	fmt.Println(aggregatedDf)
-	fmt.Println(earningsDfByTicker)
+	for i := 0; i < tagDf.Nrow(); i++ {
+		fmt.Println(tagDf.Subset([]int{i}).Records())
+	}
 	if len("GG") > 10 {
 		router := gin.Default()
 		router.LoadHTMLGlob("templates/*.tmpl")
