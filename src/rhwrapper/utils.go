@@ -25,8 +25,10 @@ func OneYearApart(dateStr1 string, dateStr2 string) bool {
 }
 
 var proxies = make(map[int]string)
+var agent = make(map[int]string)
 
 func FetchProxies() (string, error) {
+	// This is needed for crawling :)
 	if len(proxies) > 0 {
 		return proxies[rand.Intn(len(proxies))], nil
 	}
@@ -75,6 +77,33 @@ func FetchProxies() (string, error) {
 		}
 	})
 	return proxies[rand.Intn(len(proxies))], nil
+}
+
+func FetchAgent(symbol string) (string, error) {
+	// This is needed for crawling :)
+	if len(proxies) > 0 {
+		return agent[rand.Intn(len(agent))], nil
+	}
+	file, err := os.Open("src/rhwrapper/agents.txt")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	idx := 0
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return "", err
+			}
+			break
+		}
+		agent[idx] = line
+		idx += 1
+	}
+	return agent[rand.Intn(len(agent))], nil
 }
 
 func FetchStockSymbolChange(symbol string) (string, error) {
