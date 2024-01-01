@@ -3,6 +3,7 @@ module rh_metrics/m
 go 1.21.4
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-gota/gota v0.12.0
@@ -10,6 +11,7 @@ require (
 
 require (
 	github.com/AlekSi/pointer v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect

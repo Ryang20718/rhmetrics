@@ -16,7 +16,7 @@ import (
 
 func main() {
 	rhClient := rhwrapper.Hood{}
-	if len("GG") == 10 {
+	if len("GG") == 2 {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Please Enter Your MFA: ")
 		mfa, _ := reader.ReadString('\n')

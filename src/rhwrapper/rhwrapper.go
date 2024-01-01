@@ -25,6 +25,8 @@ type Hood struct {
 	Cli *robinhood.Client
 }
 
+var SymbolChangeCache = make(map[string]string) // mapping of original symbol --> current symbol
+
 func (h *Hood) Auth(username string, password string, mfa string) (*robinhood.Client, error) {
 	if username == "" {
 		return nil, fmt.Errorf("requires a username")
@@ -94,6 +96,28 @@ func (h *Hood) FetchStockSplits(ctx context.Context, ticker string) error {
 	return nil
 }
 
+/*
+Fetch current ticker symbol
+*/
+func (h *Hood) FetchCurrentTickerSymbol(symbol string) (string, error) {
+	if _, symbolInCache := SymbolChangeCache[symbol]; symbolInCache {
+		// cached value
+		return SymbolChangeCache[symbol], nil
+	}
+	_, symbolFound := h.Cli.GetInstrumentForSymbol(symbol)
+	if symbolFound != nil {
+		// this only occurs if the symbol is no longer found
+		newSymbol, err := FetchStockSymbolChange(symbol)
+		if err != nil {
+			return "", err
+		}
+		SymbolChangeCache[symbol] = newSymbol
+	} else {
+		SymbolChangeCache[symbol] = symbol
+	}
+
+	return SymbolChangeCache[symbol], nil
+}
 
 /*
 convert profit to dataframe
@@ -250,6 +274,10 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 		if calcOption {
 			option := optionList[optionIdx]
 			optionIdx += 1
+			optionTicker, err := h.FetchCurrentTickerSymbol(option.Ticker)
+			if err != nil {
+				return nil, err
+			}
 			if option.Status != "Expired" && option.Status != "Assigned" {
 				continue
 			} else if option.Status == "Assigned" {
@@ -260,24 +288,24 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 					premium = option.UnitCost
 				}
 				stock := models.Transaction{
-					Ticker:          option.Ticker,
+					Ticker:          optionTicker,
 					TransactionType: "buy",
 					Qty:             100.00 * option.Qty,
 					UnitCost:        option.StrikePrice + premium,
 					CreatedAt:       option.ExpirationDate,
 					Tag:             option.TransactionType + " assigned",
 				}
-				if profitsMap[option.Ticker] == nil {
-					profitsMap[option.Ticker] = []*models.Transaction{}
+				if profitsMap[optionTicker] == nil {
+					profitsMap[optionTicker] = []*models.Transaction{}
 				}
-				profitsMap[option.Ticker] = append(profitsMap[option.Ticker], &stock)
+				profitsMap[optionTicker] = append(profitsMap[optionTicker], &stock)
 			} else if option.Status == "Expired" {
 				if option.TransactionType == "STO" || option.TransactionType == "STC" {
 					profit := Profit{
 						Date:   strings.Split(option.CreatedAt, "T")[0],
 						Amount: option.Qty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
-						Ticker: option.Ticker,
+						Ticker: optionTicker,
 						Tag:    option.Tag,
 					}
 					profitList = append(profitList, profit)
@@ -286,7 +314,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 						Date:   strings.Split(option.CreatedAt, "T")[0],
 						Amount: -option.Qty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
-						Ticker: option.Ticker,
+						Ticker: optionTicker,
 						Tag:    option.Tag,
 					}
 					profitList = append(profitList, profit)
@@ -296,32 +324,36 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 		} else {
 			stock := stockList[stockIdx]
 			stockIdx += 1
+			stockTicker, err := h.FetchCurrentTickerSymbol(stock.Ticker)
+			if err != nil {
+				return nil, err
+			}
 			if stock.TransactionType == "sell" {
 				qty := stock.Qty
 				indexToPop := -1
 				lcapGain := 0.0
 				scapGain := 0.0
 				for qty != 0.0 {
-					if len(profitsMap[stock.Ticker]) <= 0 {
+					if len(profitsMap[stockTicker]) <= 0 {
 						profit := Profit{
 							Date:   strings.Split(stock.CreatedAt, " ")[0],
 							Amount: stock.UnitCost * stock.Qty,
 							Lcap:   false,
-							Ticker: stock.Ticker,
+							Ticker: stockTicker,
 							Tag:    stock.Tag,
 						}
 						profitList = append(profitList, profit)
 						break
 					}
-					for i, boughtStock := range profitsMap[stock.Ticker] {
-						if profitsMap[stock.Ticker][i].Qty > qty {
+					for i, boughtStock := range profitsMap[stockTicker] {
+						if profitsMap[stockTicker][i].Qty > qty {
 							gain := qty * (stock.UnitCost - boughtStock.UnitCost)
 							if OneYearApart(boughtStock.CreatedAt, stock.CreatedAt) {
 								lcapGain += gain
 							} else {
 								scapGain += gain
 							}
-							profitsMap[stock.Ticker][i].Qty -= qty
+							profitsMap[stockTicker][i].Qty -= qty
 							qty = 0
 							break
 						} else {
@@ -340,14 +372,14 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 					}
 				}
 				if indexToPop != -1 {
-					profitsMap[stock.Ticker] = profitsMap[stock.Ticker][indexToPop+1:]
+					profitsMap[stockTicker] = profitsMap[stockTicker][indexToPop+1:]
 				}
 				if lcapGain != 0.0 {
 					profit := Profit{
 						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: lcapGain,
 						Lcap:   true,
-						Ticker: stock.Ticker,
+						Ticker: stockTicker,
 						Tag:    stock.Tag,
 					}
 					profitList = append(profitList, profit)
@@ -357,16 +389,16 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 						Date:   strings.Split(stock.CreatedAt, " ")[0],
 						Amount: scapGain,
 						Lcap:   false,
-						Ticker: stock.Ticker,
+						Ticker: stockTicker,
 						Tag:    stock.Tag,
 					}
 					profitList = append(profitList, profit)
 				}
 			} else { // buy
-				if profitsMap[stock.Ticker] == nil {
-					profitsMap[stock.Ticker] = []*models.Transaction{}
+				if profitsMap[stockTicker] == nil {
+					profitsMap[stockTicker] = []*models.Transaction{}
 				}
-				profitsMap[stock.Ticker] = append(profitsMap[stock.Ticker], &stock)
+				profitsMap[stockTicker] = append(profitsMap[stockTicker], &stock)
 			}
 		}
 	}
