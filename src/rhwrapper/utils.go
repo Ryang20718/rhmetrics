@@ -9,6 +9,20 @@ import (
 	"time"
 )
 
+func BeforeDate(originalDate string, dateToCompare string) bool {
+	date1, _ := time.Parse("2006-01-02", originalDate)
+	date2, _ := time.Parse("2006-01-02", dateToCompare)
+
+	// Calculate the duration between the two dates
+	duration := date2.Sub(date1)
+
+	// Check if the dateToCompare is before the originalDate
+	if duration.Hours() <= 0 {
+		return true
+	}
+	return false
+}
+
 func OneYearApart(dateStr1 string, dateStr2 string) bool {
 	date1, _ := time.Parse("2006-01-02", dateStr1)
 	date2, _ := time.Parse("2006-01-02", dateStr2)
@@ -78,6 +92,7 @@ func FetchStockSymbolChange(symbol string) (string, error) {
 	}
 
 	currentSymbol := ""
+	// TODO make this less hacky
 	document.Find(".detailMessage__f82c6a6079").Each(func(index int, element *goquery.Selection) {
 		if len(strings.Split(element.Text(), ":")) >= 3 {
 			currentSymbol = strings.TrimSpace(strings.Split(element.Text(), ":")[2])
@@ -92,4 +107,79 @@ func FetchStockSymbolChange(symbol string) (string, error) {
 		return "", fmt.Errorf("failing to get stock symbol change. url: %s ping @ryang", webArchiveURL)
 	}
 	return currentSymbol, nil
+}
+
+
+type Event struct {
+	Date        float64 `json:"date"`
+	Denominator float64 `json:"denominator"`
+	Numerator   float64 `json:"numerator"`
+	SplitRatio  string  `json:"splitRatio"`
+}
+
+type Result struct {
+	Events     map[string]map[string]Event       `json:"events"`
+	Indicators map[string][]map[string][]float64 `json:"indicators"`
+}
+
+type Chart struct {
+	Error  interface{} `json:"error"`
+	Result []Result    `json:"result"`
+}
+
+type Data struct {
+	Chart Chart `json:"chart"`
+}
+
+type Split struct {
+	Date        string
+	Numerator   int
+	Denominator int
+}
+
+func FetchStockSplits(symbol string) ([]Split, error) {
+	url := fmt.Sprintf("%s/v8/finance/chart/%s?period1=0&period2=9999999999&interval=3mo&events=split", "https://query2.finance.yahoo.com", symbol)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if string(body) == "Will be right back" {
+		return nil, fmt.Errorf("*** YAHOO! FINANCE IS CURRENTLY DOWN! ***\nOur engineers are working quickly to resolve the issue. Thank you for your patience.")
+	}
+
+	var data Data
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	splits := []Split{}
+	for _, result := range data.Chart.Result {
+		for _, v := range result.Events {
+			for _, val := range v {
+				timestamp := int64(val.Date)
+
+				// Convert the Unix timestamp to a time.Time value
+				t := time.Unix(timestamp, 0)
+				date := t.Format("2006-01-02")
+
+				fmt.Println("TIME", date)
+				fmt.Println(val)
+				split := Split{
+					Date:        date,
+					Numerator:   int(val.Numerator),
+					Denominator: int(val.Denominator),
+				}
+				splits = append(splits, split)
+			}
+		}
+	}
+	return splits, nil
 }
