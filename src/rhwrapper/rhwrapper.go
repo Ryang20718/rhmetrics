@@ -109,13 +109,13 @@ func (h *Hood) FetchCurrentTickerSymbol(symbol string) (string, error) {
 		// this only occurs if the symbol is no longer found
 		newSymbol, err := FetchStockSymbolChange(symbol)
 		if err != nil {
-			return "", err
+			SymbolChangeCache[symbol] = symbol
+			return "", nil
 		}
 		SymbolChangeCache[symbol] = newSymbol
 	} else {
 		SymbolChangeCache[symbol] = symbol
 	}
-
 	return SymbolChangeCache[symbol], nil
 }
 

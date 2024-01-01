@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
-	"bufio"
-	"os"
-	"log"
-	"strings"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
@@ -26,16 +26,15 @@ func main() {
 		password := os.Getenv("ROBINHOOD_PASSWORD")
 		cli, err := rhClient.Auth(username, password, mfa)
 		if err != nil {
-			log.Fatal(fmt.Sprintf("failing to authenticate rhood %v", err))
+			log.Fatalf("failing to authenticate rhood %v", err)
 		}
 		rhClient.Cli = cli
 	}
 
-
 	ctx := context.Background()
 	profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("failing %v", err))
+		log.Fatalf("failing %v", err)
 	}
 
 	// see rhwrapper.go
