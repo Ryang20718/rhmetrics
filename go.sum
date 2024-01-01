@@ -6,8 +6,8 @@ github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tS
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/PuerkitoBio/goquery v1.8.1 h1:uQxhNlArOIdbrH1tr0UXwdVFgDcZDrZVdcpygAcwmWM=
 github.com/PuerkitoBio/goquery v1.8.1/go.mod h1:Q8ICL1kNUJ2sXGoAhPGUdYDJvgQgHzJsnnd3H7Ho5jQ=
-github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10 h1:c6N6XyQ/MqZjWtdeCJMlqgQ7WMaT0Xd2idPs3iq+7Us=
-github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
+github.com/Ryang20718/robinhood-client v0.0.0-20240101071619-71b6df696623 h1:KaX4wcdVMUDrVD2U0F7Dh0jRm8RVgeOX4233b+jvms8=
+github.com/Ryang20718/robinhood-client v0.0.0-20240101071619-71b6df696623/go.mod h1:TNS8bwND7QeexiSIr5/42Un0DIECCM7EHc/H+1CXbds=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/andybalholm/cascadia v1.3.1 h1:nhxRkql1kdYCc8Snf7D5/D3spOX+dBgjA6u8x004T2c=
 github.com/andybalholm/cascadia v1.3.1/go.mod h1:R4bJ1UQfqADjvDa4P6HZHLh/3OxWWEqc0Sk8XGwHqvA=

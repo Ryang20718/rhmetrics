@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"bufio"
 	"os"
+	"log"
 	"strings"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -25,7 +26,7 @@ func main() {
 		password := os.Getenv("ROBINHOOD_PASSWORD")
 		cli, err := rhClient.Auth(username, password, mfa)
 		if err != nil {
-			return
+			log.Fatal(fmt.Sprintf("failing to authenticate rhood %v", err))
 		}
 		rhClient.Cli = cli
 	}
@@ -34,7 +35,7 @@ func main() {
 	ctx := context.Background()
 	profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 	if err != nil {
-		return
+		log.Fatal(fmt.Sprintf("failing %v", err))
 	}
 
 	// see rhwrapper.go

@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"io"
+	"net/url"
+	"os"
+	"bufio"
 	"strings"
-
+	"math/rand"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -29,6 +33,7 @@ var agent = make(map[int]string)
 
 func FetchProxies() (string, error) {
 	// This is needed for crawling :)
+	// Fetches random proxy from proxy
 	if len(proxies) > 0 {
 		return proxies[rand.Intn(len(proxies))], nil
 	}
@@ -79,9 +84,10 @@ func FetchProxies() (string, error) {
 	return proxies[rand.Intn(len(proxies))], nil
 }
 
-func FetchAgent(symbol string) (string, error) {
+func FetchAgent() (string, error) {
 	// This is needed for crawling :)
-	if len(proxies) > 0 {
+	// fetches random user agent to configure bot
+	if len(agent) > 0 {
 		return agent[rand.Intn(len(agent))], nil
 	}
 	file, err := os.Open("src/rhwrapper/agents.txt")
@@ -125,14 +131,17 @@ func FetchStockSymbolChange(symbol string) (string, error) {
 		Transport: transport,
 	}
 
-	req, err := client.Get(fmt.Sprintf("https://www.bloomberg.com/quote/%s:US", symbol))
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://www.bloomberg.com/quote/%s:US", symbol), nil)
 	if err != nil {
 		return "", err
 	}
 	// Add headers
-	req.Header.Set("User-Agent", "Mozilla/80.0")
+	agent, err := FetchAgent()
+	req.Header.Set("User-Agent", agent)
+	fmt.Println(agent)
 
-	client := &http.Client{}
+	// TODO REMOVE THIS dumb wait
+	time.Sleep(time.Duration(rand.Intn(3000)) * time.Millisecond)
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err

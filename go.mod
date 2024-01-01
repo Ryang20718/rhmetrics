@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/Ryang20718/robinhood-client v0.0.0-20231227061622-fac1d5773b10
+	github.com/Ryang20718/robinhood-client v0.0.0-20240101071619-71b6df696623
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-gota/gota v0.12.0
 )
