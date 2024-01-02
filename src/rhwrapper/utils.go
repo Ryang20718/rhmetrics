@@ -6,6 +6,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"strings"
+	"io"
 	"time"
 )
 
@@ -17,7 +18,7 @@ func BeforeDate(originalDate string, dateToCompare string) bool {
 	duration := date2.Sub(date1)
 
 	// Check if the dateToCompare is before the originalDate
-	if duration.Hours() <= 0 {
+	if duration.Hours() < 0 {
 		return true
 	}
 	return false
@@ -106,6 +107,9 @@ func FetchStockSymbolChange(symbol string) (string, error) {
 	if strings.Contains(htmlBody, "Ticker Change") && currentSymbol == "" {
 		return "", fmt.Errorf("failing to get stock symbol change. url: %s ping @ryang", webArchiveURL)
 	}
+	if currentSymbol == "" {
+		return symbol, nil
+	}
 	return currentSymbol, nil
 }
 
@@ -137,6 +141,8 @@ type Split struct {
 	Denominator int
 }
 
+var CacheStockSplits = make(map[string][]Split)
+
 func FetchStockSplits(symbol string) ([]Split, error) {
 	url := fmt.Sprintf("%s/v8/finance/chart/%s?period1=0&period2=9999999999&interval=3mo&events=split", "https://query2.finance.yahoo.com", symbol)
 	resp, err := http.Get(url)
@@ -145,7 +151,7 @@ func FetchStockSplits(symbol string) ([]Split, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -169,9 +175,6 @@ func FetchStockSplits(symbol string) ([]Split, error) {
 				// Convert the Unix timestamp to a time.Time value
 				t := time.Unix(timestamp, 0)
 				date := t.Format("2006-01-02")
-
-				fmt.Println("TIME", date)
-				fmt.Println(val)
 				split := Split{
 					Date:        date,
 					Numerator:   int(val.Numerator),
@@ -182,4 +185,32 @@ func FetchStockSplits(symbol string) ([]Split, error) {
 		}
 	}
 	return splits, nil
+}
+
+func GetStockSplitCorrection(symbol string, date string, qty float64, price float64) (float64, float64, error) {
+	// returns stock split corrected amount based on present day
+	if _, keyFound := CacheStockSplits[symbol]; !keyFound {
+		stockSplits, err := FetchStockSplits(symbol)
+		if err != nil {
+			return 0.0, 0.0, err
+		}
+		CacheStockSplits[symbol] = stockSplits
+	}
+	qtyMultiplier := 1.0
+	priceMultiplier := 1.0
+	for _, split := range CacheStockSplits[symbol] {
+		if BeforeDate(split.Date, date) {
+			if split.Numerator != 1 {
+				// Numerator, so we need to divide cost and multiply count
+				qtyMultiplier *= float64(split.Numerator)
+				priceMultiplier /= float64(split.Numerator)
+			} else {
+				// Denominator, so we need to multiply cost and divide count
+				// reverse split
+				qtyMultiplier /= float64(split.Denominator)
+				priceMultiplier *= float64(split.Denominator)
+			}
+		}
+	}
+	return (qty*qtyMultiplier), (price*priceMultiplier), nil
 }

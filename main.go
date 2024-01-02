@@ -55,6 +55,7 @@ func main() {
 	tagDf = tagDf.Arrange(
 		dataframe.Sort("Year"),
 	)
+	
 	amount := tagDf.Col("Amount_SUM").Records()
 	yearsTag := tagDf.Col("Year").Records()
 	tag := tagDf.Col("Tag").Records()
@@ -72,9 +73,13 @@ func main() {
 	earningsByTickerLabels := earningsDfByTicker.Col("Ticker").Records()
 
 	fmt.Println(aggregatedDf)
-	for i := 0; i < tagDf.Nrow(); i++ {
-		fmt.Println(tagDf.Subset([]int{i}).Records())
-	}
+	// for i := 0; i < tagDf.Nrow(); i++ {
+	// 	fmt.Println(tagDf.Subset([]int{i}).Records())
+	// }
+	// for i := 0; i < tickerDf.Nrow(); i++ {
+	// 	fmt.Println(tickerDf.Subset([]int{i}).Records())
+	// }
+	
 	if len("GG") > 10 {
 		router := gin.Default()
 		router.LoadHTMLGlob("templates/*.tmpl")

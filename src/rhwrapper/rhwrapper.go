@@ -92,10 +92,6 @@ func (h *Hood) FetchRegularTrades(ctx context.Context) (map[string][]models.Tran
 	return stockOrderMap, nil
 }
 
-func (h *Hood) FetchStockSplits(ctx context.Context, ticker string) error {
-	return nil
-}
-
 /*
 Fetch current ticker symbol
 */
@@ -275,6 +271,16 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			option := optionList[optionIdx]
 			optionIdx += 1
 			optionTicker, err := h.FetchCurrentTickerSymbol(option.Ticker)
+			createdDate := strings.Split(option.CreatedAt, "T")[0]
+			splitAdjustedQty, splitAdjustedPrice, err := GetStockSplitCorrection(option.Ticker, createdDate, option.Qty, option.UnitCost)
+			if err != nil {
+				return nil, err
+			}
+			option.StrikePrice = option.StrikePrice * (option.Qty/splitAdjustedQty)
+			option.Qty = splitAdjustedQty
+			optionQty := option.Qty
+			option.UnitCost = splitAdjustedPrice
+
 			if err != nil {
 				return nil, err
 			}
@@ -290,7 +296,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				stock := models.Transaction{
 					Ticker:          optionTicker,
 					TransactionType: "buy",
-					Qty:             100.00 * option.Qty,
+					Qty:             100.00 * optionQty,
 					UnitCost:        option.StrikePrice + premium,
 					CreatedAt:       option.ExpirationDate,
 					Tag:             option.TransactionType + " assigned",
@@ -302,8 +308,8 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			} else if option.Status == "Expired" {
 				if option.TransactionType == "STO" || option.TransactionType == "STC" {
 					profit := Profit{
-						Date:   strings.Split(option.CreatedAt, "T")[0],
-						Amount: option.Qty * 100 * option.UnitCost,
+						Date:   createdDate,
+						Amount: optionQty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
 						Ticker: optionTicker,
 						Tag:    option.Tag,
@@ -311,8 +317,8 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 					profitList = append(profitList, profit)
 				} else {
 					profit := Profit{
-						Date:   strings.Split(option.CreatedAt, "T")[0],
-						Amount: -option.Qty * 100 * option.UnitCost,
+						Date:   createdDate,
+						Amount: -optionQty * 100 * option.UnitCost,
 						Lcap:   false, // TODO calculate whether actual LTG
 						Ticker: optionTicker,
 						Tag:    option.Tag,
@@ -328,6 +334,15 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			if err != nil {
 				return nil, err
 			}
+			createdDate := strings.Split(stock.CreatedAt, " ")[0]
+			splitAdjustedQty, splitAdjustedPrice, err := GetStockSplitCorrection(stock.Ticker, createdDate, stock.Qty, stock.UnitCost)
+			if err != nil {
+				return nil, err
+			}
+			stock.UnitCost = splitAdjustedPrice
+			stock.Qty = splitAdjustedQty
+			stockQty := stock.Qty
+
 			if stock.TransactionType == "sell" {
 				qty := stock.Qty
 				indexToPop := -1
@@ -336,8 +351,8 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				for qty != 0.0 {
 					if len(profitsMap[stockTicker]) <= 0 {
 						profit := Profit{
-							Date:   strings.Split(stock.CreatedAt, " ")[0],
-							Amount: stock.UnitCost * stock.Qty,
+							Date:   createdDate,
+							Amount: stock.UnitCost * stockQty,
 							Lcap:   false,
 							Ticker: stockTicker,
 							Tag:    stock.Tag,
@@ -376,7 +391,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				}
 				if lcapGain != 0.0 {
 					profit := Profit{
-						Date:   strings.Split(stock.CreatedAt, " ")[0],
+						Date:   createdDate,
 						Amount: lcapGain,
 						Lcap:   true,
 						Ticker: stockTicker,
@@ -386,7 +401,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 				}
 				if scapGain != 0.0 {
 					profit := Profit{
-						Date:   strings.Split(stock.CreatedAt, " ")[0],
+						Date:   createdDate,
 						Amount: scapGain,
 						Lcap:   false,
 						Ticker: stockTicker,
@@ -402,6 +417,13 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			}
 		}
 	}
+	k := make(map[string]float64)
+	for _, val := range profitList {
+		if strings.Split(val.Date, "-")[0] == "2020" {
+			k[val.Ticker] += val.Amount
+		}
+	}
+	fmt.Println(k)
 	profitListDf := h.ConvertProfitDf(profitList)
 	return profitListDf, nil
 }
