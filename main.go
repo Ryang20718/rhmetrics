@@ -20,9 +20,26 @@ func redirectError(c *gin.Context, err error) {
 	c.Redirect(http.StatusSeeOther, "/error")
 }
 
+func isAuthenticated(c *gin.Context) {
+	session := sessions.Default(c)
+	// Check if "authenticated" is set to true in the session
+	isAuthenticated := session.Get("authenticated") == true
+
+	if !isAuthenticated {
+		// If the user is not authenticated, redirect them to the login page
+		c.Redirect(http.StatusSeeOther, "/login")
+		c.Abort() // Prevent the handler from running
+		return
+	}
+	c.Next() // If the user is authenticated, proceed to the handler
+}
+
 func main() {
 	rhClient := rhwrapper.Hood{}
 	router := gin.Default()
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("stateStorage", store))
+
 	router.LoadHTMLGlob("templates/*.tmpl")
 	
 	router.GET("/login", func(c *gin.Context) {
@@ -45,9 +62,18 @@ func main() {
 		if err != nil {
 			c.Error(err)
 			c.Redirect(http.StatusSeeOther, "/error")
+			return
 		}
-		rhClient.Cli = cli
+		session := sessions.Default(c)
+		session.Set("authenticated", true)
+		if err := session.Save(); err != nil {
+			c.Error(err)
+			c.Redirect(http.StatusSeeOther, "/error")
+			return
+		}
+	
 		c.Redirect(http.StatusMovedPermanently, "/")
+		rhClient.Cli = cli
 	})
 
 	// if len("GG") == 3 {
@@ -64,7 +90,7 @@ func main() {
 	// 	rhClient.Cli = cli
 	// }
 	
-	router.GET("/", func(c *gin.Context) {
+	router.GET("/", isAuthenticated, func(c *gin.Context) {
 		ctx := context.Background()
 		profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 		if err != nil {
