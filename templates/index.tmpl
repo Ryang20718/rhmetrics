@@ -42,8 +42,11 @@
         <div class="chart-container">
             <canvas id="EarningsByTicker" width="400" height="300"></canvas>
         </div>
-        <div class="number-display">
-            <p>Number: <span id="numberDisplay">0</span></p>
+        <div class="cur-year-profit">
+            <p>Current Year Profit: <span id="CurYearProfit">0</span></p>
+        </div>
+        <div class="total-profit">
+            <p>Total Profit: <span id="TotalProfit">0</span></p>
         </div>
     </div>
 
@@ -111,6 +114,8 @@
                     datasets: earningByTagData
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true
@@ -171,10 +176,17 @@
                 return color;
             }
 
-            // Number Display
-            var numberDisplay = document.getElementById('numberDisplay');
-            numberDisplay.innerText = 42; // Replace with your actual number data
+            var profitByYear = {{.DataTimeSeries}}
+            var sumOfProfitByYear = profitByYear.reduce(function(accumulator, currentValue) {
+                return accumulator + parseFloat(currentValue);
+            }, 0);
 
+            var currentYearProfit = profitByYear[profitByYear.length - 1];
+            var curYearProfit = document.getElementById('CurYearProfit');
+            curYearProfit.innerText = currentYearProfit;
+
+            var totalProfit = document.getElementById('TotalProfit');
+            totalProfit.innerText = sumOfProfitByYear;
 
             var uniqueYears = Array.from(new Set(years));
 

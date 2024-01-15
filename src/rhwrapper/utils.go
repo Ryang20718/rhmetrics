@@ -8,6 +8,8 @@ import (
 	"strings"
 	"io"
 	"time"
+	"os"
+	"encoding/gob"
 )
 
 func BeforeDate(originalDate string, dateToCompare string) bool {
@@ -213,4 +215,20 @@ func GetStockSplitCorrection(symbol string, date string, qty float64, price floa
 		}
 	}
 	return (qty*qtyMultiplier), (price*priceMultiplier), nil
+}
+
+func CacheAPICall(cacheFilePath string, dataToEncode interface{}) error {
+	encodeFile, err := os.Create(cacheFilePath)
+	if err != nil {
+		return fmt.Errorf("failing to create encoding. ERR: %v", err)
+	}
+
+	// Since this is a binary format large parts of it will be unreadable
+	encoder := gob.NewEncoder(encodeFile)
+
+	if err := encoder.Encode(dataToEncode); err != nil {
+		return fmt.Errorf("failing to encode. ERR: %v", err)
+	}
+	encodeFile.Close()
+	return nil
 }

@@ -55,6 +55,27 @@ Returns mapping of ticker to model.OptionTransaction
 Each ticker maps to a list which is sorted by created datetime
 */
 func (h *Hood) FetchOptionTrades(ctx context.Context) (map[string][]models.OptionTransaction, error) {
+	cachedFile := "/tmp/option.map"
+	if os.Getenv("DEV") != "" {
+		// use cache for development purposes
+		_, err := os.Stat(cachedFile)
+		if err == nil {
+			// file exists
+			var optionMap map[string][]models.OptionTransaction
+			dataFile, err := os.Open(cachedFile)
+		
+			if err != nil {
+				return nil, err
+			}
+		
+			dataDecoder := gob.NewDecoder(dataFile)
+			err = dataDecoder.Decode(&optionMap)
+			if err != nil {
+				return nil, err
+			}
+			return optionMap, nil
+		}
+	}
 	optionsOrderMap := make(map[string][]models.OptionTransaction)
 	optionOrders, err := h.Cli.GetOptionsOrders(ctx)
 	if err != nil {
@@ -69,6 +90,9 @@ func (h *Hood) FetchOptionTrades(ctx context.Context) (map[string][]models.Optio
 		}
 		optionsOrderMap[order.Ticker] = append(optionsOrderMap[order.Ticker], order)
 	}
+	if os.Getenv("DEV") != "" {
+		CacheAPICall(cachedFile, optionsOrderMap)
+	}
 	return optionsOrderMap, nil
 }
 
@@ -78,6 +102,27 @@ Returns mapping of ticker to model.Transaction
 Each ticker maps to a list which is sorted by created datetime
 */
 func (h *Hood) FetchRegularTrades(ctx context.Context) (map[string][]models.Transaction, error) {
+	cachedFile := "/tmp/stock.map"
+	if os.Getenv("DEV") != "" {
+		// use cache for development purposes
+		_, err := os.Stat(cachedFile)
+		if err == nil {
+			// file exists
+			var stockMap map[string][]models.Transaction
+			dataFile, err := os.Open(cachedFile)
+		
+			if err != nil {
+				return nil, err
+			}
+			dataDecoder := gob.NewDecoder(dataFile)
+			err = dataDecoder.Decode(&stockMap)
+			if err != nil {
+				return nil, err
+			}
+			return stockMap, nil
+		}
+	}
+	// regenerate cache
 	stockOrderMap := make(map[string][]models.Transaction)
 	stockOrders, err := h.Cli.GetStockOrders()
 	if err != nil {
@@ -88,6 +133,9 @@ func (h *Hood) FetchRegularTrades(ctx context.Context) (map[string][]models.Tran
 			stockOrderMap[order.Ticker] = []models.Transaction{}
 		}
 		stockOrderMap[order.Ticker] = append(stockOrderMap[order.Ticker], order)
+	}
+	if os.Getenv("DEV") != "" {
+		CacheAPICall(cachedFile, stockOrderMap)
 	}
 	return stockOrderMap, nil
 }
@@ -151,76 +199,15 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 }
 
 func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
-	if len("GG") == 2 {
-		stockMap, err := h.FetchRegularTrades(ctx)
-		if err != nil {
-			panic("GG")
-		}
-
-		optionMap, err := h.FetchOptionTrades(ctx)
-		if err != nil {
-			panic("GG")
-		}
-
-		encodeFile, err := os.Create("/Users/ryang/Documents/rh_metrics/stock.map")
-		if err != nil {
-			panic(err)
-		}
-
-		// Since this is a binary format large parts of it will be unreadable
-		encoder := gob.NewEncoder(encodeFile)
-
-		// Write to the file
-		if err := encoder.Encode(stockMap); err != nil {
-			panic(err)
-		}
-		encodeFile.Close()
-
-		encodeFile, err = os.Create("/Users/ryang/Documents/rh_metrics/option.map")
-		if err != nil {
-			panic(err)
-		}
-
-		// Since this is a binary format large parts of it will be unreadable
-		encoder = gob.NewEncoder(encodeFile)
-
-		// Write to the file
-		if err := encoder.Encode(optionMap); err != nil {
-			panic(err)
-		}
-		encodeFile.Close()
-		// panic("GG")
-	}
-
-	var stockMap map[string][]models.Transaction
-	dataFile, err := os.Open("stock.map")
-
+	stockMap, err := h.FetchRegularTrades(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	dataDecoder := gob.NewDecoder(dataFile)
-	err = dataDecoder.Decode(&stockMap)
-
+	optionMap, err := h.FetchOptionTrades(ctx)
 	if err != nil {
 		return nil, err
 	}
-	dataFile.Close()
-
-	var optionMap map[string][]models.OptionTransaction
-	dataFile, err = os.Open("option.map")
-
-	if err != nil {
-		return nil, err
-	}
-
-	dataDecoder = gob.NewDecoder(dataFile)
-	err = dataDecoder.Decode(&optionMap)
-
-	if err != nil {
-		return nil, err
-	}
-	dataFile.Close()
 
 	stockList := []models.Transaction{}
 	optionList := []models.OptionTransaction{}
@@ -417,13 +404,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			}
 		}
 	}
-	// k := make(map[string]float64)
-	// for _, val := range profitList {
-	// 	if strings.Split(val.Date, "-")[0] == "2020" {
-	// 		k[val.Ticker] += val.Amount
-	// 	}
-	// }
-	// fmt.Println(k)
+
 	profitListDf := h.ConvertProfitDf(profitList)
 	return profitListDf, nil
 }

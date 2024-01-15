@@ -3,13 +3,14 @@ package main
 import (
 	// "bufio"
 	"context"
-	"fmt"
+	// "fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	// "os"
 	// "strings"
-
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/go-gota/gota/dataframe"
 	"github.com/go-gota/gota/series"
 	"rh_metrics/m/src/rhwrapper"
@@ -24,10 +25,9 @@ func isAuthenticated(c *gin.Context) {
 	session := sessions.Default(c)
 	// Check if "authenticated" is set to true in the session
 	isAuthenticated := session.Get("authenticated") == true
-
 	if !isAuthenticated {
 		// If the user is not authenticated, redirect them to the login page
-		c.Redirect(http.StatusSeeOther, "/login")
+		c.Redirect(http.StatusSeeOther, "/metrics")
 		c.Abort() // Prevent the handler from running
 		return
 	}
@@ -42,7 +42,7 @@ func main() {
 
 	router.LoadHTMLGlob("templates/*.tmpl")
 	
-	router.GET("/login", func(c *gin.Context) {
+	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.tmpl", nil)
 	})
 	
@@ -54,7 +54,7 @@ func main() {
 		})
 	})
 
-	router.POST("/login", func(c *gin.Context) {
+	router.POST("/", func(c *gin.Context) {
 		email := c.PostForm("email")
 		password := c.PostForm("password")
 		mfa := c.PostForm("mfa")
@@ -65,32 +65,19 @@ func main() {
 			return
 		}
 		session := sessions.Default(c)
-		session.Set("authenticated", true)
 		if err := session.Save(); err != nil {
 			c.Error(err)
 			c.Redirect(http.StatusSeeOther, "/error")
 			return
 		}
-	
-		c.Redirect(http.StatusMovedPermanently, "/")
+		session.Set("authenticated", true)
+		c.Redirect(http.StatusMovedPermanently, "/metrics")
 		rhClient.Cli = cli
 	})
-
-	// if len("GG") == 3 {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	fmt.Print("Please Enter Your MFA: ")
-	// 	mfa, _ := reader.ReadString('\n')
-	// 	mfa = strings.TrimSuffix(mfa, "\n")
-	// 	username := os.Getenv("ROBINHOOD_USERNAME")
-	// 	password := os.Getenv("ROBINHOOD_PASSWORD")
-	// 	cli, err := rhClient.Auth(username, password, mfa)
-	// 	if err != nil {
-	// 		log.Fatalf("failing to authenticate rhood %v", err)
-	// 	}
-	// 	rhClient.Cli = cli
-	// }
 	
-	router.GET("/", isAuthenticated, func(c *gin.Context) {
+	router.GET("/metrics", isAuthenticated, func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("authenticated", false)
 		ctx := context.Background()
 		profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 		if err != nil {
@@ -115,7 +102,6 @@ func main() {
 		tagDf = tagDf.Arrange(
 			dataframe.Sort("Year"),
 		)
-		fmt.Println(tagDf)
 		
 		amount := tagDf.Col("Amount_SUM").Records()
 		yearsTag := tagDf.Col("Year").Records()

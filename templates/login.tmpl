@@ -31,10 +31,28 @@
     input[type="submit"]:hover {
       background-color: #008D04;
     }
+    /* Add styles for the loading message and spinner */
+    #loadingMessage {
+      display: none;
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #00C805;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <form action="/login" method="post">
+  <form id="loginForm" action="/" method="post">
     <div>
       <label for="email">Email:</label>
       <input type="email" id="email" name="email" required>
@@ -49,5 +67,37 @@
     </div>
     <input type="submit" value="Login">
   </form>
+  <!-- Loading message and spinner -->
+  <div id="loadingMessage">
+    <p>Processing your login, please wait...my dumbass wrote terribly inefficient code</p>
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    // Get the form and loading message elements
+    var form = document.getElementById('loginForm');
+    var loadingMessage = document.getElementById('loadingMessage');
+
+    // Add an event listener for the form's submit event
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      loadingMessage.style.display = 'block';
+
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+      }).then(function(response) {
+        // Handle the response from the server
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          loadingMessage.style.display = 'none';
+        }
+      }).catch(function(error) {
+        loadingMessage.style.display = 'none';
+      });
+    });
+  </script>
 </body>
 </html>
