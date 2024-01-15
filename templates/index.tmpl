@@ -30,10 +30,14 @@
             <canvas id="timeSeriesChart" width="400" height="300"></canvas>
         </div>
         <div class="chart-container">
-            <canvas id="barChart" width="400" height="300"></canvas>
-        </div>
-        <div class="chart-container">
             <canvas id="YearEarningsByTag" width="400" height="300"></canvas>
+        </div>
+        <div>
+        <label for="yearFilter">Filter by year:</label>
+        <select id="yearFilter">
+            <option value="all">All</option>
+            <!-- Options will be added dynamically -->
+        </select>
         </div>
         <div class="chart-container">
             <canvas id="EarningsByTicker" width="400" height="300"></canvas>
@@ -65,59 +69,38 @@
                 }
             });
 
-            // Bar Chart
-            var barChartCtx = document.getElementById('barChart').getContext('2d');
-            var barChart = new Chart(barChartCtx, {
-                type: 'bar',
-                data: {
-                    labels: ["Label1", "Label2", "Label3"],
-                    datasets: [{
-                        label: 'Earnings By Tag',
-                        data: [5, 15, 10],
-                        backgroundColor: 'rgb(255, 99, 132)',
-                        borderWidth: 2,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: [{
-                            stacked: true
-                        }],
-                        y: [{
-                            stacked: true
-                        }]
-                    }
-                }
-            });
 
             var years = {{.LabelsYearsTag}}
             var tags = {{.LabelsTags}}
             var amounts = {{.DataAmount}}
 
-            // Group data by Tag
             var groupedData = {};
             for (var i = 0; i < years.length; i++) {
                 var year = years[i];
                 var tag = tags[i];
-                var amount = amounts[i];
+                var amount = parseFloat(amounts[i]);
 
                 if (!groupedData[tag]) {
-                    groupedData[tag] = { label: tag, data: Array(years.length).fill(0) };
+                    groupedData[tag] = {};
                 }
-
-                groupedData[tag].data[years.indexOf(year)] += amount;
+                if (!groupedData[tag][year]) {
+                    groupedData[tag][year] = 0;
+                }
+                groupedData[tag][year] += amount; // Sum up the amounts for each tag within each year
             }
 
-            // Create datasets dynamically
-            var datasets = Object.values(groupedData).map(item => ({
-                label: item.label,
-                data: item.data,
-                backgroundColor: getRandomColor(),
-                borderWidth: 1,
-                stack: 'Stack 1' // You can adjust the stack name as needed
-            }));
+            // Convert grouped data into the format expected by Chart.js
+            var uniqueYears = [...new Set(years)]; // Get unique years
+            var earningByTagData = Object.keys(groupedData).map(tag => {
+                var data = uniqueYears.map(year => groupedData[tag][year] || 0); // Map amounts to the corresponding year, default to 0 if not present
+                return {
+                    label: tag,
+                    data: data,
+                    backgroundColor: getRandomColor(),
+                    borderWidth: 1,
+                    stack: 'Stack 1'
+                };
+            });
 
             // Chart configuration
             var barChartCtx = document.getElementById('YearEarningsByTag').getContext('2d');
@@ -125,18 +108,19 @@
                 type: 'bar',
                 data: {
                     labels: Array.from(new Set(years)).map(String), // Unique years
-                    datasets: datasets
+                    datasets: earningByTagData
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     scales: {
-                        x: [{
-                            stacked: true
-                        }],
-                        y: [{
-                            stacked: true
-                        }]
+                        y: {
+                            beginAtZero: true
+                        },
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Earnings by Type of Transaction and Year'
+                        }
                     }
                 }
             });
@@ -144,11 +128,11 @@
 
             var earningsLabelsByTicker = {{.DataLabelsByTicker}};
             var earningValsByTicker = {{.DataValByTicker}};
+            var earningValsByYear = {{.DataValByTickerYear}};
 
-            // Create pie chart with dynamically generated colors
-            var pieChartCtx = document.getElementById('EarningsByTicker').getContext('2d');
-            var pieChart = new Chart(pieChartCtx, {
-                type: 'pie',
+            var earningsByTickerCtx = document.getElementById('EarningsByTicker').getContext('2d');
+            var earningsByTickerChart = new Chart(earningsByTickerCtx, {
+                type: 'bar',
                 data: {
                     labels: earningsLabelsByTicker,
                     datasets: [{
@@ -159,7 +143,12 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
                 }
             });
 
@@ -185,6 +174,47 @@
             // Number Display
             var numberDisplay = document.getElementById('numberDisplay');
             numberDisplay.innerText = 42; // Replace with your actual number data
+
+
+            var uniqueYears = Array.from(new Set(years));
+
+            // Get the dropdown menu element
+            var yearFilter = document.getElementById('yearFilter');
+
+            // Add an option for each unique year to the dropdown menu
+            for (var i = 0; i < uniqueYears.length; i++) {
+                var option = document.createElement('option');
+                option.value = uniqueYears[i];
+                option.text = uniqueYears[i];
+                yearFilter.appendChild(option);
+            }
+
+            yearFilter.addEventListener('change', function() {
+                // Get the selected year
+                var selectedYear = this.value;
+
+                // If "All" is selected, display data from all years
+                if (selectedYear == 'all') {
+                    earningsByTickerChart.data.labels = earningsLabelsByTicker;
+                    earningsByTickerChart.data.datasets[0].data = earningValsByTicker;
+                } else {
+                    // Filter the data to only include the selected year
+                    var filteredLabels = [];
+                    var filteredData = [];
+                    for (var i = 0; i < earningValsByYear.length; i++) {
+                        if (earningValsByYear[i] == selectedYear) {
+                            filteredLabels.push(earningsLabelsByTicker[i]);
+                            filteredData.push(earningValsByTicker[i]);
+                        }
+                    }
+
+                    // Update the chart with the filtered data
+                    earningsByTickerChart.data.labels = filteredLabels;
+                    earningsByTickerChart.data.datasets[0].data = filteredData;
+                }
+
+                earningsByTickerChart.update();
+            });
         });
     </script>
 </body>

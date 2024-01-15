@@ -151,7 +151,7 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 }
 
 func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
-	if len("GG") == 10 {
+	if len("GG") == 2 {
 		stockMap, err := h.FetchRegularTrades(ctx)
 		if err != nil {
 			panic("GG")
@@ -417,13 +417,13 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			}
 		}
 	}
-	k := make(map[string]float64)
-	for _, val := range profitList {
-		if strings.Split(val.Date, "-")[0] == "2020" {
-			k[val.Ticker] += val.Amount
-		}
-	}
-	fmt.Println(k)
+	// k := make(map[string]float64)
+	// for _, val := range profitList {
+	// 	if strings.Split(val.Date, "-")[0] == "2020" {
+	// 		k[val.Ticker] += val.Amount
+	// 	}
+	// }
+	// fmt.Println(k)
 	profitListDf := h.ConvertProfitDf(profitList)
 	return profitListDf, nil
 }
