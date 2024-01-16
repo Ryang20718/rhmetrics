@@ -55,18 +55,18 @@ func main() {
 		mfa := c.PostForm("mfa")
 		cli, err := rhClient.Auth(email, password, mfa)
 		if err != nil {
-			c.Error(err)
+			c.Error(err) //nolint:errcheck
 			c.Redirect(http.StatusSeeOther, "/error")
 			return
 		}
 		session := sessions.Default(c)
 		if err := session.Save(); err != nil {
-			_ := c.Error(err)
+			c.Error(err) //nolint:errcheck
 			c.Redirect(http.StatusSeeOther, "/error")
 			return
 		}
 		session.Set("authenticated", true)
-		_ := c.Redirect(http.StatusMovedPermanently, "/metrics")
+		c.Redirect(http.StatusMovedPermanently, "/metrics")
 		rhClient.Cli = cli
 	})
 
@@ -130,6 +130,6 @@ func main() {
 		})
 	})
 
-	router.Run(":8080")
+	router.Run(":8080") //nolint:errcheck
 
 }
