@@ -32,6 +32,10 @@ func isAuthenticated(c *gin.Context) {
 func main() {
 	rhClient := rhwrapper.Hood{}
 	router := gin.Default()
+	router.Use(func(c *gin.Context) {
+		c.Header("ngrok-skip-browser-warning", "true")
+		c.Next()
+	})
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("stateStorage", store))
 
