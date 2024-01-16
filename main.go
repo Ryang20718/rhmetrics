@@ -33,7 +33,7 @@ func main() {
 	rhClient := rhwrapper.Hood{}
 	router := gin.Default()
 	router.Use(func(c *gin.Context) {
-		c.Header("ngrok-skip-browser-warning", "true")
+		c.Request.Header.Add("ngrok-skip-browser-warning", "true")
 		c.Next()
 	})
 	store := cookie.NewStore([]byte("secret"))
