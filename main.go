@@ -16,11 +16,6 @@ import (
 	"rh_metrics/m/src/rhwrapper"
 )
 
-func redirectError(c *gin.Context, err error) {
-	c.Error(err)
-	c.Redirect(http.StatusSeeOther, "/error")
-}
-
 func isAuthenticated(c *gin.Context) {
 	session := sessions.Default(c)
 	// Check if "authenticated" is set to true in the session
@@ -41,16 +36,16 @@ func main() {
 	router.Use(sessions.Sessions("stateStorage", store))
 
 	router.LoadHTMLGlob("templates/*.tmpl")
-	
+
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.tmpl", nil)
 	})
-	
+
 	router.GET("/error", func(c *gin.Context) {
 		// Get the last error message
 		errMsg := c.Errors.ByType(gin.ErrorTypePrivate).Last().Error()
 		c.HTML(http.StatusOK, "error.tmpl", gin.H{
-		  "ErrorMessage": errMsg,
+			"ErrorMessage": errMsg,
 		})
 	})
 
@@ -66,15 +61,15 @@ func main() {
 		}
 		session := sessions.Default(c)
 		if err := session.Save(); err != nil {
-			c.Error(err)
+			_ := c.Error(err)
 			c.Redirect(http.StatusSeeOther, "/error")
 			return
 		}
 		session.Set("authenticated", true)
-		c.Redirect(http.StatusMovedPermanently, "/metrics")
+		_ := c.Redirect(http.StatusMovedPermanently, "/metrics")
 		rhClient.Cli = cli
 	})
-	
+
 	router.GET("/metrics", isAuthenticated, func(c *gin.Context) {
 		session := sessions.Default(c)
 		session.Set("authenticated", false)
@@ -83,26 +78,26 @@ func main() {
 		if err != nil {
 			log.Fatalf("failing %v", err)
 		}
-	
+
 		// see rhwrapper.go
 		aggregatedDf := profitDf.
 			GroupBy("Year").
 			Aggregation([]dataframe.AggregationType{dataframe.Aggregation_SUM}, []string{"Amount"})
-	
+
 		aggregatedDf = aggregatedDf.Arrange(
 			dataframe.Sort("Year"),
 		)
 		years := aggregatedDf.Col("Year").Records()
 		ytdRealizedGains := aggregatedDf.Col("Amount_SUM").Records()
-	
+
 		tagDf := profitDf.
 			GroupBy("Year", "Tag").
 			Aggregation([]dataframe.AggregationType{dataframe.Aggregation_SUM}, []string{"Amount"})
-	
+
 		tagDf = tagDf.Arrange(
 			dataframe.Sort("Year"),
 		)
-		
+
 		amount := tagDf.Col("Amount_SUM").Records()
 		yearsTag := tagDf.Col("Year").Records()
 		tag := tagDf.Col("Tag").Records()
@@ -115,7 +110,7 @@ func main() {
 			}).
 			GroupBy("Year", "Ticker").
 			Aggregation([]dataframe.AggregationType{dataframe.Aggregation_SUM}, []string{"Amount"})
-	
+
 		earningsByTickerAmount := earningsDfByTicker.Col("Amount_SUM").Records()
 		earningsByTickerLabels := earningsDfByTicker.Col("Ticker").Records()
 		earningsByTickerYear := earningsDfByTicker.Col("Year").Records()
@@ -124,17 +119,17 @@ func main() {
 		data := ytdRealizedGains
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"LabelsTimeSeries":   labels,
-			"DataTimeSeries":     data,
-			"LabelsYearsTag":     yearsTag,
-			"LabelsTags":         tag,
-			"DataAmount":         amount,
-			"DataLabelsByTicker": earningsByTickerLabels,
-			"DataValByTicker":    earningsByTickerAmount,
+			"LabelsTimeSeries":    labels,
+			"DataTimeSeries":      data,
+			"LabelsYearsTag":      yearsTag,
+			"LabelsTags":          tag,
+			"DataAmount":          amount,
+			"DataLabelsByTicker":  earningsByTickerLabels,
+			"DataValByTicker":     earningsByTickerAmount,
 			"DataValByTickerYear": earningsByTickerYear,
 		})
 	})
-	
+
 	router.Run(":8080")
 
 }

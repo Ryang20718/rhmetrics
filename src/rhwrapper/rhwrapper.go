@@ -63,11 +63,11 @@ func (h *Hood) FetchOptionTrades(ctx context.Context) (map[string][]models.Optio
 			// file exists
 			var optionMap map[string][]models.OptionTransaction
 			dataFile, err := os.Open(cachedFile)
-		
+
 			if err != nil {
 				return nil, err
 			}
-		
+
 			dataDecoder := gob.NewDecoder(dataFile)
 			err = dataDecoder.Decode(&optionMap)
 			if err != nil {
@@ -91,7 +91,10 @@ func (h *Hood) FetchOptionTrades(ctx context.Context) (map[string][]models.Optio
 		optionsOrderMap[order.Ticker] = append(optionsOrderMap[order.Ticker], order)
 	}
 	if os.Getenv("DEV") != "" {
-		CacheAPICall(cachedFile, optionsOrderMap)
+		err := CacheAPICall(cachedFile, optionsOrderMap)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return optionsOrderMap, nil
 }
@@ -110,7 +113,7 @@ func (h *Hood) FetchRegularTrades(ctx context.Context) (map[string][]models.Tran
 			// file exists
 			var stockMap map[string][]models.Transaction
 			dataFile, err := os.Open(cachedFile)
-		
+
 			if err != nil {
 				return nil, err
 			}
@@ -135,7 +138,10 @@ func (h *Hood) FetchRegularTrades(ctx context.Context) (map[string][]models.Tran
 		stockOrderMap[order.Ticker] = append(stockOrderMap[order.Ticker], order)
 	}
 	if os.Getenv("DEV") != "" {
-		CacheAPICall(cachedFile, stockOrderMap)
+		err := CacheAPICall(cachedFile, stockOrderMap)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return stockOrderMap, nil
 }
@@ -263,7 +269,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			if err != nil {
 				return nil, err
 			}
-			option.StrikePrice = option.StrikePrice * (option.Qty/splitAdjustedQty)
+			option.StrikePrice = option.StrikePrice * (option.Qty / splitAdjustedQty)
 			option.Qty = splitAdjustedQty
 			optionQty := option.Qty
 			option.UnitCost = splitAdjustedPrice

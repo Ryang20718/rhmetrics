@@ -1,15 +1,15 @@
 package rhwrapper
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"net/http"
-	"strings"
 	"io"
-	"time"
+	"net/http"
 	"os"
-	"encoding/gob"
+	"strings"
+	"time"
 )
 
 func BeforeDate(originalDate string, dateToCompare string) bool {
@@ -20,10 +20,7 @@ func BeforeDate(originalDate string, dateToCompare string) bool {
 	duration := date2.Sub(date1)
 
 	// Check if the dateToCompare is before the originalDate
-	if duration.Hours() < 0 {
-		return true
-	}
-	return false
+	return duration.Hours() < 0
 }
 
 func OneYearApart(dateStr1 string, dateStr2 string) bool {
@@ -114,7 +111,6 @@ func FetchStockSymbolChange(symbol string) (string, error) {
 	}
 	return currentSymbol, nil
 }
-
 
 type Event struct {
 	Date        float64 `json:"date"`
@@ -214,7 +210,7 @@ func GetStockSplitCorrection(symbol string, date string, qty float64, price floa
 			}
 		}
 	}
-	return (qty*qtyMultiplier), (price*priceMultiplier), nil
+	return (qty * qtyMultiplier), (price * priceMultiplier), nil
 }
 
 func CacheAPICall(cacheFilePath string, dataToEncode interface{}) error {
