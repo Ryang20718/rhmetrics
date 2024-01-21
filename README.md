@@ -5,7 +5,7 @@ Why not calculate Robinhood metrics just like you do for system metrics?
 I find it a hassle to calculate ytd realized earnings on robinhood for options + stocks so I made this as a hobby. It's terrible and I bet bugs will arise.
 However, I will do my best to address these issues...well at least until robinhood builds it in to their app!
 
-Current Site is still a work in progress!. Link is [here](https://ca83-2601-647-6300-9411-be24-11ff-fefb-e6e2.ngrok-free.app) Feel free to ping me via filing github issues.
+Current Site is still a work in progress!. Link is [here](https://44d9-2601-647-6300-9410-be24-11ff-fefb-e6e2.ngrok-free.app) Feel free to ping me via filing github issues.
 
 Navigate to `http://localhost:8080/` and login with your username, password and MFA.
 
