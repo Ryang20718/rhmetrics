@@ -23,6 +23,7 @@
             margin-top: 20px;
         }
     </style>
+    <link href="https://unpkg.com/tabulator-tables@5.5.4/dist/css/tabulator.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="dashboard">
@@ -48,8 +49,12 @@
         <div class="total-profit">
             <p>Total Profit: <span id="TotalProfit">0</span></p>
         </div>
+        <input id="ticker-filter" type="text" placeholder="AMZN,TSLA,FB,GOOG">
+        <div id="TransactionTable"></div>
+
     </div>
 
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@5.5.4/dist/js/tabulator.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Time Series Chart
@@ -226,6 +231,45 @@
                 }
 
                 earningsByTickerChart.update();
+            });
+
+            var unrealizedProfitTransactionsDf = {{.UnrealizedProfitTransactions}}
+            var unrealizedProfitTransactions = unrealizedProfitTransactionsDf.slice(1).map(function(item) {
+                return {
+                    "Year": item[0],
+                    "Date": item[1],
+                    "Qty": item[2],
+                    "Price": item[3],
+                    "Ticker": item[4],
+                    "TransactionType": item[5]
+                };
+            });
+
+            var table = new Tabulator("#TransactionTable", {
+                data:unrealizedProfitTransactions, //assign data to table
+                columns:[ //Define Table Columns
+                    {title:"Ticker", field:"Ticker"},
+                    {title:"Year", field:"Year"},
+                    {title:"Quantity", field:"Qty"},
+                    {title:"Date", field:"Date"},
+                    {title:"Price", field:"Price"},
+                    {title:"TransactionType", field:"TransactionType"}
+                ],
+            });
+            var inputField = document.getElementById("ticker-filter");
+
+            // Update filter when input changes
+            inputField.addEventListener("change", function() {
+                // Split input into array
+                var tickers = inputField.value.split(",");
+
+                // Remove whitespace from each ticker
+                tickers = tickers.map(function(ticker) {
+                    return ticker.trim();
+                });
+
+                // Set filter
+                table.setFilter("Ticker", "in", tickers);
             });
         });
     </script>

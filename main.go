@@ -74,7 +74,7 @@ func main() {
 		session := sessions.Default(c)
 		session.Set("authenticated", false)
 		ctx := context.Background()
-		profitDf, err := rhClient.ProcessRealizedEarnings(ctx)
+		profitDf, unrealizedProfitDf, err := rhClient.ProcessRealizedEarnings(ctx)
 		if err != nil {
 			log.Fatalf("failing %v", err)
 		}
@@ -119,14 +119,15 @@ func main() {
 		data := ytdRealizedGains
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"LabelsTimeSeries":    labels,
-			"DataTimeSeries":      data,
-			"LabelsYearsTag":      yearsTag,
-			"LabelsTags":          tag,
-			"DataAmount":          amount,
-			"DataLabelsByTicker":  earningsByTickerLabels,
-			"DataValByTicker":     earningsByTickerAmount,
-			"DataValByTickerYear": earningsByTickerYear,
+			"LabelsTimeSeries":             labels,
+			"DataTimeSeries":               data,
+			"LabelsYearsTag":               yearsTag,
+			"LabelsTags":                   tag,
+			"DataAmount":                   amount,
+			"DataLabelsByTicker":           earningsByTickerLabels,
+			"DataValByTicker":              earningsByTickerAmount,
+			"DataValByTickerYear":          earningsByTickerYear,
+			"UnrealizedProfitTransactions": unrealizedProfitDf.Records(),
 		})
 	})
 

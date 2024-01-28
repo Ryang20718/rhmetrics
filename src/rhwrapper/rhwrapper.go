@@ -204,15 +204,53 @@ func (h *Hood) ConvertProfitDf(profitList []Profit) *dataframe.DataFrame {
 	return &df
 }
 
-func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, error) {
+/*
+convert bought stock to dataframe
+*/
+func (h *Hood) ConvertUnrealizedProfitDf(unrealizedProfit map[string][]*models.Transaction) *dataframe.DataFrame {
+	// Create series for each field
+	years := series.New([]string{}, series.String, "Year")
+	dates := series.New([]string{}, series.String, "Date")
+	stockQty := series.New([]float64{}, series.Float, "Qty")
+	price := series.New([]float64{}, series.Float, "Price")
+	tickers := series.New([]string{}, series.String, "Ticker")
+	transactionType := series.New([]string{}, series.String, "TransactionType")
+
+	// Populate series with data from Profit struct array
+	for ticker, transactionList := range unrealizedProfit {
+		for _, transaction := range transactionList {
+			years.Append(strings.Split(transaction.CreatedAt, "-")[0])
+			dates.Append(transaction.CreatedAt)
+			stockQty.Append(transaction.Qty)
+			price.Append(transaction.UnitCost)
+			tickers.Append(ticker)
+			transactionType.Append(transaction.TransactionType)
+		}
+	}
+
+	// Create DataFrame
+	df := dataframe.New(
+		years,
+		dates,
+		stockQty,
+		price,
+		tickers,
+		transactionType,
+	)
+
+	return &df
+}
+
+// Return dataframe of profit, map of ticker --> purchase date
+func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFrame, *dataframe.DataFrame, error) {
 	stockMap, err := h.FetchRegularTrades(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	optionMap, err := h.FetchOptionTrades(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	stockList := []models.Transaction{}
@@ -267,7 +305,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			createdDate := strings.Split(option.CreatedAt, "T")[0]
 			splitAdjustedQty, splitAdjustedPrice, err := GetStockSplitCorrection(option.Ticker, createdDate, option.Qty, option.UnitCost)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			option.StrikePrice = option.StrikePrice * (option.Qty / splitAdjustedQty)
 			option.Qty = splitAdjustedQty
@@ -275,7 +313,7 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			option.UnitCost = splitAdjustedPrice
 
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if option.Status != "Expired" && option.Status != "Assigned" {
 				continue
@@ -325,12 +363,12 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 			stockIdx += 1
 			stockTicker, err := h.FetchCurrentTickerSymbol(stock.Ticker)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			createdDate := strings.Split(stock.CreatedAt, " ")[0]
 			splitAdjustedQty, splitAdjustedPrice, err := GetStockSplitCorrection(stock.Ticker, createdDate, stock.Qty, stock.UnitCost)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			stock.UnitCost = splitAdjustedPrice
 			stock.Qty = splitAdjustedQty
@@ -412,5 +450,6 @@ func (h *Hood) ProcessRealizedEarnings(ctx context.Context) (*dataframe.DataFram
 	}
 
 	profitListDf := h.ConvertProfitDf(profitList)
-	return profitListDf, nil
+	unrealizedProfit := h.ConvertUnrealizedProfitDf(profitsMap)
+	return profitListDf, unrealizedProfit, nil
 }
